@@ -1,0 +1,68 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.1.2'
+	id 'io.spring.dependency-management' version '1.1.2'
+	id 'maven-publish'
+}
+
+group = 'com.fluidnotions'
+version = '0.0.1'
+
+java {
+	sourceCompatibility = '17'
+}
+
+bootJar {
+	enabled = false
+}
+
+jar {
+	enabled = true
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+def properties = new Properties()
+file(project.rootDir.absolutePath + "/local.properties").withInputStream { properties.load(it) }
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+
+
+publishing {
+	repositories {
+		maven {
+			name = "GitHubPackages"
+			url = uri("https://maven.pkg.github.com/fluidnotions/generic-jpa-criteria-REST")
+			credentials {
+				username = properties.getProperty('github.username')
+				password = properties.getProperty('github.token')
+			}
+		}
+	}
+	publications {
+		mavenJava(MavenPublication){
+			artifact jar
+			artifactId = 'generic-jpa-criteria-REST'
+		}
+	}
+}
