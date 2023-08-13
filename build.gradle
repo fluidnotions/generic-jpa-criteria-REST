@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'com.fluidnotions'
-version = '0.0.1'
+version = '0.1.0'
 
 java {
 	sourceCompatibility = '17'
@@ -46,7 +46,7 @@ publishing {
 	publications {
 		mavenJava(MavenPublication){
 			artifact jar
-			artifactId = 'generic-jpa-criteria-REST'
+			artifactId = 'generic-jpa-criteria-rest'
 		}
 	}
 }
