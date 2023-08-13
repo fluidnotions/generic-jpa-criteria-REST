@@ -36,7 +36,7 @@ publishing {
 	repositories {
 		maven {
 			name = "GitHubPackages"
-			url = uri("https://maven.pkg.github.com/fluidnotions/generic-jpa-criteria-REST")
+			url = uri("https://maven.pkg.github.com/fluidnotions/generic-jpa-criteria-rest")
 			credentials {
 				username = properties.getProperty('github.username')
 				password = properties.getProperty('github.token')
