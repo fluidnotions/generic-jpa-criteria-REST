@@ -1,4 +1,4 @@
-package com.fluidnotions.genericjpacriteriaREST;
+package com.fluidnotions.genericjpacriteriarest;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -12,8 +12,8 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.metamodel.EntityType;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
@@ -25,24 +25,22 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.lang.reflect.Field;
 import java.util.*;
+
 import java.util.stream.Collectors;
 
 
-@Slf4j
-@RequiredArgsConstructor
 @RestController
 @ConditionalOnProperty(name = "rest-jpa-criteria-search.advanced", havingValue = "true", matchIfMissing = false)
 public class JpaCriteriaSearchController {
-
     private final EntityManager entityManager;
-
-
+    private final static Logger log = LoggerFactory.getLogger(JpaCriteriaSearchController.class);
     @Value("${rest-jpa-criteria-search.entity-name-fallback-prefix:none}")
     private String entityNameFallbackPrefix;
 
 
- 
-
+    public JpaCriteriaSearchController(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
 
     private ObjectMapper objectMapper() {
         Jackson2ObjectMapperBuilder builder = new Jackson2ObjectMapperBuilder();

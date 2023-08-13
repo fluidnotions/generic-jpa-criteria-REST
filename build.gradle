@@ -12,22 +12,7 @@ java {
 	sourceCompatibility = '17'
 }
 
-bootJar {
-	enabled = false
-}
 
-jar {
-	enabled = true
-}
-
-configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
-}
-
-def properties = new Properties()
-file(project.rootDir.absolutePath + "/local.properties").withInputStream { properties.load(it) }
 
 repositories {
 	mavenCentral()
@@ -38,15 +23,14 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0'
-	compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
 }
 
-
+def properties = new Properties()
+file(project.rootDir.absolutePath + "/local.properties").withInputStream { properties.load(it) }
 
 publishing {
 	repositories {

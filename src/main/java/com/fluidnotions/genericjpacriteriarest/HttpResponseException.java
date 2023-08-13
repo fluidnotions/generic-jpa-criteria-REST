@@ -1,4 +1,4 @@
-package com.fluidnotions.genericjpacriteriaREST;
+package com.fluidnotions.genericjpacriteriarest;
 
 import org.springframework.http.HttpStatus;
 
