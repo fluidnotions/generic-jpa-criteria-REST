@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 
 @Configuration
 @AutoConfigureAfter(WebMvcAutoConfiguration.class)
-public class JpaCriteriaSearchControllerConfig{
+public class JpaCriteriaSearchControllerConfig {
     @RestController
     @RequestMapping("${rest-jpa-criteria-search.controller-path-prefix:/}")
     @DependsOn("entityManagerFactory")
