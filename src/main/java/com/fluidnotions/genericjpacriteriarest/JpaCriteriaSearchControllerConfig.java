@@ -65,7 +65,7 @@ public class JpaCriteriaSearchControllerConfig {
         }
 
 
-        @Operation(summary = "criteria search on any entity", description = "matches on like string ignoring case, numbers equal, projection list", tags = {"1. jpa-criteria-search"})
+        @Operation(summary = "criteria search on any entity", description = "matches on like string ignoring case, numbers equal, projection list", tags = {"1. generic-jpa-criteria-rest"})
         @PostMapping (value = "/search/{entity}", produces = "application/json", consumes = "application/json")
         public String search(@PathVariable(name = "entity") String entityName, @RequestBody Dto.Search search) throws Exception {
             var entities = entityManager.getMetamodel().getEntities();
