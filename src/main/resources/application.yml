@@ -1,5 +1,0 @@
-springdoc:
-  swagger-ui:
-    path: /criteria-search-docs
-    tagsSorter: alpha
-

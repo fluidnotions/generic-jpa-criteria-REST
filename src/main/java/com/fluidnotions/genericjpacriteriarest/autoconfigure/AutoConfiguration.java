@@ -1,6 +1,9 @@
-package com.fluidnotions.genericjpacriteriarest;
+package com.fluidnotions.genericjpacriteriarest.autoconfigure;
 
+import com.fluidnotions.genericjpacriteriarest.JpaCriteriaSearchController;
+import jakarta.persistence.EntityManagerFactory;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -8,7 +11,8 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @AutoConfigureAfter({WebMvcAutoConfiguration.class})
+@ConditionalOnBean(EntityManagerFactory.class)
 @ComponentScan(basePackageClasses = JpaCriteriaSearchController.class)
-public class JpaCriteriaSearchControllerConfig {
+public class AutoConfiguration {
 
 }
