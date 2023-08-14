@@ -16,6 +16,7 @@ import jakarta.persistence.criteria.*;
 import jakarta.persistence.metamodel.EntityType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.http.HttpStatus;
@@ -37,12 +38,8 @@ public class JpaCriteriaSearchController {
     @Value("${rest-jpa-criteria-search.entity-name-fallback-prefix:none}")
     private String entityNameFallbackPrefix;
 
+    @Autowired
     private EntityManager entityManager;
-
-    public JpaCriteriaSearchController(EntityManager entityManager) {
-        this.entityManager = entityManager;
-    }
-
 
     private ObjectMapper objectMapper() {
         Jackson2ObjectMapperBuilder builder = new Jackson2ObjectMapperBuilder();
