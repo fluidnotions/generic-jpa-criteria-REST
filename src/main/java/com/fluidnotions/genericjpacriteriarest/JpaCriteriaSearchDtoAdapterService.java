@@ -1,8 +1,10 @@
 package com.fluidnotions.genericjpacriteriarest;
 
 
+import io.swagger.v3.oas.annotations.servers.Server;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -11,6 +13,7 @@ import java.util.Map;
 
 @Slf4j
 @RequiredArgsConstructor
+@Service
 public class JpaCriteriaSearchDtoAdapterService {
 
     private final JpaCriteriaSearchService jpaCriteriaSearchService;
