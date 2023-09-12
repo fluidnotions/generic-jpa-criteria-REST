@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'com.fluidnotions'
-version = '0.0.4'
+version = '0.0.5-SNAPSHOT'
 
 java {
 	sourceCompatibility = '17'
@@ -21,6 +21,13 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0'
 	testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
+	compileOnly 'org.projectlombok:lombok:+'
+	annotationProcessor 'org.projectlombok:lombok:+'
+	annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+}
+
+tasks.named('compileJava') {
+	inputs.files(tasks.named('processResources'))
 }
 
 
