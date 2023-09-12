@@ -17,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -49,31 +48,31 @@ public class JpaCriteriaSearchService {
         return objectMapper;
     }
 
-
-    public String search(String entityName, @RequestBody Dto.Search search) {
+    public Dto.SearchResult search(String entityName, Dto.Search search) {
         var entities = entityManager.getMetamodel().getEntities();
         var entityNames = entities.stream().map(e -> e.getName().toLowerCase()).collect(Collectors.joining(", "));
         log.debug("Entities: {}", entityNames);
         EntityType<?> entityType = getEntityType(entityName, entities);
         log.debug("Entity: {}", entityType);
         if (entityType != null) {
-            return search(search, entityType);
+            var results = searchEntities(entityType.getJavaType(), entityManager, search);
+            return Dto.SearchResult.builder().results(results).entityType(entityType).build();
         }
         else if (!entityNameFallbackPrefix.equals("none")) {
             entityType = getEntityType(entityNameFallbackPrefix + entityName, entities);
             if (entityType != null) {
-                return search(search, entityType);
+                var results = searchEntities(entityType.getJavaType(), entityManager, search);
+                return Dto.SearchResult.builder().results(results).entityType(entityType).build();
             }
         }
         throw new RuntimeException("No entity type '%s' found".formatted(entityName));
     }
 
-
-    private String search(Dto.Search search, EntityType<?> entityType) {
-        var results = searchEntities(entityType.getJavaType(), entityManager, search);
-        if (results.size() > 0) {
+    public String searchAndSerialize(String entityName, Dto.Search search) {
+        var result = search(entityName, search);
+        if (result.results() != null && result.results().size() > 0) {
             try {
-                return serializeEntityTypeList(results, entityType, search);
+                return serializeEntityTypeList(result.results(), result.entityType(), search);
             } catch (JsonProcessingException e) {
                 log.error("Error serializing results", e);
                 return "[]";

@@ -19,7 +19,7 @@ public class JpaCriteriaSearchController {
     @PostMapping(value = "/search/{entity}", produces = "application/json", consumes = "application/json")
     public String search(@PathVariable(name = "entity") String entityName, @RequestBody Dto.Search search) throws HttpResponseException {
         try {
-            return jpaCriteriaSearchService.search(entityName, search);
+            return jpaCriteriaSearchService.searchAndSerialize(entityName, search);
         } catch (Exception e) {
             throw new HttpResponseException("Error occurred searching :\n" + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
