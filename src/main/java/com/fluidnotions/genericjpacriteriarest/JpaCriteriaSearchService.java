@@ -269,7 +269,7 @@ public class JpaCriteriaSearchService {
         var isNullIsEmpty = whereIsPresent && models.where().isNull() == null;
         var isNotNullIsEmpty = whereIsPresent && models.where().isNotNull() == null;
 
-        if (projectionIsEmpty && likeIsEmpty && equalsLongIsEmpty && isNullIsEmpty && isNotNullIsEmpty) {
+        if (likeIsEmpty && equalsLongIsEmpty && isNullIsEmpty && isNotNullIsEmpty && projectionIsEmpty) {
             throw new IllegalStateException("search.where().like(), search.where().equalsLong(), search.where().isNull(), search.isNotNullIsEmpty(), and search.projection are all empty, which is not supported");
         }
         return whereIsPresent;
