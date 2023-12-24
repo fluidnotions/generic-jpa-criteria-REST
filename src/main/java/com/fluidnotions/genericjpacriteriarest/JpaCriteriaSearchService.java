@@ -34,17 +34,18 @@ import java.util.stream.Collectors;
 public class JpaCriteriaSearchService {
 
     private final EntityManager entityManager;
+    private final Jackson2ObjectMapperBuilder jacksonBuilder;
     @Value("${rest-jpa-criteria-search.entity-name-fallback-prefix:none}")
     private String entityNameFallbackPrefix;
 
     private ObjectMapper objectMapper() {
-        Jackson2ObjectMapperBuilder builder = new Jackson2ObjectMapperBuilder();
+
         @JsonIgnoreProperties({"hibernateLazyInitializer"})
         record HibernateMixin() {
         }
 
-        builder.mixIn(Object.class, HibernateMixin.class);
-        ObjectMapper objectMapper = builder.build();
+        jacksonBuilder.mixIn(Object.class, HibernateMixin.class);
+        ObjectMapper objectMapper = jacksonBuilder.build();
         objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         return objectMapper;
     }
@@ -139,19 +140,22 @@ public class JpaCriteriaSearchService {
 
         List<Predicate> predicates = new ArrayList<>();
         Field[] fields = domainClass.getDeclaredFields();
-        if (whereIsPresent && search.where().like() != null) {
-            addLikePredicates(search.where().like(), criteriaBuilder, root, predicates, fields);
+        if (whereIsPresent && search.where().like() != null && search.where().like().values().stream().allMatch(value -> value != null)) {
+            addLikePredicates(search, criteriaBuilder, root, predicates, fields);
         }
-        if (whereIsPresent && search.where().equalsLong() != null) {
-            addEqualsLongPredicates(search.where().equalsLong(), criteriaBuilder, root, predicates, fields);
+        if (whereIsPresent && search.where().equalsLong() != null && search.where().equalsLong().values().stream().allMatch(value -> value != null)) {
+            addEqualsLongPredicates(search, criteriaBuilder, root, predicates, fields);
         }
-        if (whereIsPresent && search.where().isNotNull() != null) {
+        if (whereIsPresent && search.where().notEqualsLong() != null && search.where().notEqualsLong().values().stream().allMatch(value -> value != null)) {
+            addNotEqualsLongPredicates(search, criteriaBuilder, root, predicates, fields);
+        }
+        if (whereIsPresent && search.where().isNotNull() != null && search.where().isNotNull().stream().allMatch(value -> value != null)) {
             addIsNotNullPredicates(search, fields, root, criteriaBuilder, predicates);
         }
-        if (whereIsPresent && search.where().isNull() != null) {
+        if (whereIsPresent && search.where().isNull() != null && search.where().isNull().stream().allMatch(value -> value != null)) {
             addIsNullPredicates(search, fields, root, criteriaBuilder, predicates);
         }
-        if (whereIsPresent && search.where().equalsString() != null) {
+        if (whereIsPresent && search.where().equalsString() != null  && search.where().equalsString().values().stream().allMatch(value -> value != null)) {
             addEqualsStringPredicates(search, criteriaBuilder, root, predicates, fields);
         }
         if (predicates.size() > 0) {
@@ -219,8 +223,8 @@ public class JpaCriteriaSearchService {
         }
     }
 
-    private void addLikePredicates(Map<String, String> search, CriteriaBuilder criteriaBuilder, Root<?> root, List<Predicate> predicates, Field[] fields) {
-        for (var entry : search.entrySet()) {
+    private void addLikePredicates(Dto.Search search, CriteriaBuilder criteriaBuilder, Root<?> root, List<Predicate> predicates, Field[] fields) {
+        for (var entry : search.where().like().entrySet()) {
             Arrays.stream(fields).filter(f -> {
                 var fieldName = f.getName();
                 log.debug("addLikePredicates: fieldName: {}, entry.key: {}", fieldName, entry.getKey());
@@ -240,8 +244,8 @@ public class JpaCriteriaSearchService {
         }
     }
 
-    private void addEqualsLongPredicates(Map<String, Long> search, CriteriaBuilder criteriaBuilder, Root<?> root, List<Predicate> predicates, Field[] fields) {
-        for (var entry : search.entrySet()) {
+    private void addEqualsLongPredicates(Dto.Search search, CriteriaBuilder criteriaBuilder, Root<?> root, List<Predicate> predicates, Field[] fields) {
+        for (var entry : search.where().equalsLong().entrySet()) {
             Arrays.stream(fields).filter(f -> {
                 var fieldName = f.getName();
                 log.debug("addEqualsLongPredicates: fieldName: {}, entry.key: {}", fieldName, entry.getKey());
@@ -261,15 +265,37 @@ public class JpaCriteriaSearchService {
         }
     }
 
+    private void addNotEqualsLongPredicates(Dto.Search search, CriteriaBuilder criteriaBuilder, Root<?> root, List<Predicate> predicates, Field[] fields) {
+        for (var entry : search.where().notEqualsLong().entrySet()) {
+            Arrays.stream(fields).filter(f -> {
+                var fieldName = f.getName();
+                log.debug("addNotEqualsLongPredicates: fieldName: {}, entry.key: {}", fieldName, entry.getKey());
+                var eq = fieldName.equalsIgnoreCase(entry.getKey());
+                log.debug("addEqualsLongPredicates: eq: {}", eq);
+                return eq;
+            }).findFirst().ifPresent(f -> {
+                f.setAccessible(true);
+                var fieldName = f.getName();
+                Path rootName = root.get(fieldName);
+                var value = entry.getValue();
+                log.debug("addNotEqualsLongPredicates: fieldName: {}, value: {}, rootName: {}", fieldName, value, rootName);
+                var predicate = criteriaBuilder.notEqual(rootName, value);
+                log.debug("addNotEqualsLongPredicates: predicate: {}", predicate);
+                predicates.add(predicate);
+            });
+        }
+    }
+
     private boolean searchRecordValidation(Dto.Search models) {
         var whereIsPresent = models.where() != null;
         var projectionIsEmpty = models.projection() == null;
         var likeIsEmpty = whereIsPresent && models.where().like() != null;
         var equalsLongIsEmpty = whereIsPresent && models.where().equalsLong() == null;
+        var notEqualsLongIsEmpty = whereIsPresent && models.where().notEqualsLong() == null;
         var isNullIsEmpty = whereIsPresent && models.where().isNull() == null;
         var isNotNullIsEmpty = whereIsPresent && models.where().isNotNull() == null;
 
-        if (likeIsEmpty && equalsLongIsEmpty && isNullIsEmpty && isNotNullIsEmpty && projectionIsEmpty) {
+        if (likeIsEmpty && equalsLongIsEmpty && isNullIsEmpty && isNotNullIsEmpty && projectionIsEmpty && notEqualsLongIsEmpty) {
             throw new IllegalStateException("search.where().like(), search.where().equalsLong(), search.where().isNull(), search.isNotNullIsEmpty(), and search.projection are all empty, which is not supported");
         }
         return whereIsPresent;

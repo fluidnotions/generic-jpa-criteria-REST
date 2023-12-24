@@ -43,6 +43,7 @@ dependencies {
      "where": {
        "like": {"name": "John"},
        "equalsLong": {"age": 30},
+       "notEqualsLong": {"age": 50},
        "equalsString": {"city": "New York"},
        "isNull": ["address"],
        "isNotNull": ["phoneNumber"]
