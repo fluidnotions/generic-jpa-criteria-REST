@@ -287,16 +287,17 @@ public class JpaCriteriaSearchService {
     }
 
     private boolean searchRecordValidation(Dto.Search models) {
-        var whereIsPresent = models.where() != null;
-        var projectionIsEmpty = models.projection() == null;
-        var likeIsEmpty = whereIsPresent && models.where().like() != null;
-        var equalsLongIsEmpty = whereIsPresent && models.where().equalsLong() == null;
-        var notEqualsLongIsEmpty = whereIsPresent && models.where().notEqualsLong() == null;
-        var isNullIsEmpty = whereIsPresent && models.where().isNull() == null;
-        var isNotNullIsEmpty = whereIsPresent && models.where().isNotNull() == null;
+        var where = models.where();
+        var whereIsPresent = where != null;
+        var projectionIsEmpty = models.projection() == null || models.projection().length == 0;
+        var likeIsEmpty = whereIsPresent && (where.like() == null || where.like().isEmpty());
+        var equalsLongIsEmpty = whereIsPresent && (where.equalsLong() == null || where.equalsLong().isEmpty());
+        var notEqualsLongIsEmpty = whereIsPresent && (where.notEqualsLong() == null || where.notEqualsLong().isEmpty());
+        var isNullIsEmpty = whereIsPresent && (where.isNull() == null || where.isNull().isEmpty());
+        var isNotNullIsEmpty = whereIsPresent && (where.isNotNull() == null || where.isNotNull().isEmpty());
 
         if (likeIsEmpty && equalsLongIsEmpty && isNullIsEmpty && isNotNullIsEmpty && projectionIsEmpty && notEqualsLongIsEmpty) {
-            throw new IllegalStateException("search.where().like(), search.where().equalsLong(), search.where().isNull(), search.isNotNullIsEmpty(), and search.projection are all empty, which is not supported");
+            throw new IllegalStateException("search.where().like(), search.where().equalsLong(), search.where().isNull(), search.isNotNullIsEmpty(), and search.projection are all null or empty, which is not supported");
         }
         return whereIsPresent;
     }

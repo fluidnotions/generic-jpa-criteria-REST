@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'com.fluidnotions'
-version = '0.0.8'
+version = '0.1.9'
 
 java {
 	sourceCompatibility = '17'

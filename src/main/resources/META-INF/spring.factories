@@ -1,2 +1,0 @@
-# AutoConfigurations
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.fluidnotions.genericjpacriteriarest.autoconfigure.AutoConfiguration
