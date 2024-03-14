@@ -1,14 +1,9 @@
 package com.fluidnotions.genericjpacriteriarest;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.*;
@@ -19,9 +14,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -88,41 +85,8 @@ public class JpaCriteriaSearchService {
     }
 
     private String serializeEntityTypeList(List<?> results, EntityType<?> entityType, Dto.Search search) throws JsonProcessingException {
-        var objectMapper = objectMapper();
-
-        if (search.projection() != null && search.projection().length > 0) {
-            SimpleModule module = new SimpleModule();
-            module.addSerializer(entityType.getJavaType(), new JsonSerializer<Object>() {
-                @Override
-                public void serialize(Object value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-                    ObjectMapper defaultMapper = objectMapper();
-                    ObjectNode objectNode = defaultMapper.valueToTree(value);
-                    Iterator<String> fieldNameIter = objectNode.fieldNames();
-
-                    // Create a map to hold lower-case to original-case field name mapping
-                    Map<String, String> fieldNameMap = new HashMap<>();
-                    fieldNameIter.forEachRemaining(fieldName -> fieldNameMap.put(fieldName.toLowerCase(), fieldName));
-
-                    List<String> fieldNames = new ArrayList<>(fieldNameMap.keySet());
-
-//                    String[] projection = search.projection();
-//                    var include = Arrays.stream(projection).map(String::toLowerCase).collect(Collectors.toList());
-//
-//                    for (String fieldName : fieldNames) {
-//                        if (!include.contains(fieldName)) {
-//                            // Use the original-case field name for the remove operation
-//                            objectNode.remove(fieldNameMap.get(fieldName));
-//                        }
-//                    }
-                    gen.writeTree(objectNode);
-                }
-            });
-
-            objectMapper.registerModule(module);
-        }
-
         var javaTypeList = TypeFactory.defaultInstance().constructCollectionType(List.class, entityType.getJavaType());
-        var writer = objectMapper.writerFor(javaTypeList);
+        var writer = objectMapper().writerFor(javaTypeList);
         var json = writer.writeValueAsString(results);
         return json;
     }
@@ -163,8 +127,12 @@ public class JpaCriteriaSearchService {
         }
 
         var query = entityManager.createQuery(criteriaQuery);
-        var results = query.getResultList();
-        return results;
+        try {
+            var results = query.getResultList();
+            return results;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
 
