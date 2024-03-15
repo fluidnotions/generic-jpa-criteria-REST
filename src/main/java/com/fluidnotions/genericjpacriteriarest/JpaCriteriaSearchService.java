@@ -127,12 +127,8 @@ public class JpaCriteriaSearchService {
         }
 
         var query = entityManager.createQuery(criteriaQuery);
-        try {
-            var results = query.getResultList();
-            return results;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        var results = query.getResultList();
+        return results;
     }
 
 
