@@ -18,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -26,6 +28,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
+@RestController
 @Service
 @SuppressWarnings("unchecked")
 public class JpaCriteriaSearchService {
@@ -105,15 +108,15 @@ public class JpaCriteriaSearchService {
 
                     List<String> fieldNames = new ArrayList<>(fieldNameMap.keySet());
 
-//                    String[] projection = search.projection();
-//                    var include = Arrays.stream(projection).map(String::toLowerCase).collect(Collectors.toList());
-//
-//                    for (String fieldName : fieldNames) {
-//                        if (!include.contains(fieldName)) {
-//                            // Use the original-case field name for the remove operation
-//                            objectNode.remove(fieldNameMap.get(fieldName));
-//                        }
-//                    }
+                    String[] projection = search.projection();
+                    var include = Arrays.stream(projection).map(String::toLowerCase).collect(Collectors.toList());
+
+                    for (String fieldName : fieldNames) {
+                        if (!include.contains(fieldName)) {
+                            // Use the original-case field name for the remove operation
+                            objectNode.remove(fieldNameMap.get(fieldName));
+                        }
+                    }
                     gen.writeTree(objectNode);
                 }
             });
@@ -155,18 +158,13 @@ public class JpaCriteriaSearchService {
         if (whereIsPresent && search.where().equalsString() != null  && search.where().equalsString().values().stream().allMatch(value -> value != null)) {
             addEqualsStringPredicates(search, criteriaBuilder, root, predicates, fields);
         }
-        if (search.projection() != null && search.projection().length > 0) {
-            addProjection(criteriaQuery, root, search.projection());
-        }
         if (predicates.size() > 0) {
             criteriaQuery.where(predicates.toArray(new Predicate[predicates.size()]));
         }
-
         var query = entityManager.createQuery(criteriaQuery);
         var results = query.getResultList();
         return results;
     }
-
 
     private void addIsNullPredicates(Dto.Search search, Field[] fields, Root<?> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
         for (var fieldName : search.where().isNull()) {
@@ -183,26 +181,6 @@ public class JpaCriteriaSearchService {
                 log.debug("addIsNullPredicates: predicate: {}", predicate);
                 predicates.add(predicate);
             });
-        }
-    }
-
-    private void addProjection(CriteriaQuery<?> criteriaQuery, Root<?> root, String[] projection) {
-        List<Selection<?>> selections = new ArrayList<>();
-        for (var pathString : projection) {
-            var path = buildPath(root, pathString);
-            selections.add(path);
-        }
-        criteriaQuery.multiselect(selections.toArray(Selection[]::new));
-    }
-
-    private Path buildPath(Path<?> root, String pathString) {
-        if (pathString.contains(".")) {
-            String[] pathSegments = pathString.split(".", 2);
-            Path<?> currentPath = root.get(pathSegments[0]);
-            return buildPath(currentPath, pathSegments[1]);
-        }
-        else {
-            return root.get(pathString);
         }
     }
 
