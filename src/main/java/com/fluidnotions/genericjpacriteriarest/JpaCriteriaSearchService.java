@@ -3,13 +3,12 @@ package com.fluidnotions.genericjpacriteriarest;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import jakarta.persistence.CacheRetrieveMode;
+import jakarta.persistence.CacheStoreMode;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.*;
 import jakarta.persistence.metamodel.EntityType;
@@ -18,12 +17,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -53,16 +54,17 @@ public class JpaCriteriaSearchService {
     public Dto.SearchResult search(String entityName, Dto.Search search) {
         var entities = entityManager.getMetamodel().getEntities();
         var entityNames = entities.stream().map(e -> e.getName().toLowerCase()).collect(Collectors.joining(", "));
-        log.debug("Entities: {}", entityNames);
+        log.debug("Target entity: {}, All entities: {}", entityName, entityNames);
         EntityType<?> entityType = getEntityType(entityName, entities);
-        log.debug("Entity: {}", entityType);
+
         if (entityType != null) {
+            log.debug("Entity: {}", entityType);
             var results = searchEntities(entityType.getJavaType(), entityManager, search);
             return Dto.SearchResult.builder().results(results).entityType(entityType).build();
-        }
-        else if (!entityNameFallbackPrefix.equals("none")) {
+        }else if (!entityNameFallbackPrefix.equals("none")) {
             entityType = getEntityType(entityNameFallbackPrefix + entityName, entities);
             if (entityType != null) {
+                log.debug("Entity: {}", entityType);
                 var results = searchEntities(entityType.getJavaType(), entityManager, search);
                 return Dto.SearchResult.builder().results(results).entityType(entityType).build();
             }
@@ -90,6 +92,10 @@ public class JpaCriteriaSearchService {
         return entityType;
     }
 
+    /**
+     * Using multiSelect didn't work on all entities for unknown reasons, so we have to fetch everything and manually filter the results.
+     * An alternative would be to use a DTO projection, dynamically generated, but that would require a lot of reflection and would be more complex.
+     * */
     private String serializeEntityTypeList(List<?> results, EntityType<?> entityType, Dto.Search search) throws JsonProcessingException {
         var objectMapper = objectMapper();
 
@@ -100,36 +106,45 @@ public class JpaCriteriaSearchService {
                 public void serialize(Object value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
                     ObjectMapper defaultMapper = objectMapper();
                     ObjectNode objectNode = defaultMapper.valueToTree(value);
-                    Iterator<String> fieldNameIter = objectNode.fieldNames();
 
-                    // Create a map to hold lower-case to original-case field name mapping
-                    Map<String, String> fieldNameMap = new HashMap<>();
-                    fieldNameIter.forEachRemaining(fieldName -> fieldNameMap.put(fieldName.toLowerCase(), fieldName));
+                    List<String> projection = Arrays.stream(search.projection()).map(String::toLowerCase).collect(Collectors.toList());
 
-                    List<String> fieldNames = new ArrayList<>(fieldNameMap.keySet());
+                    ObjectNode filteredNode = defaultMapper.createObjectNode();
+                    for (String path : projection) {
+                        String[] pathSegments = path.contains(".") ? path.split("\\.") : new String[]{path};
+                        buildFilteredNode(pathSegments, objectNode, filteredNode);
+                    }
 
-                    String[] projection = search.projection();
-                    var include = Arrays.stream(projection).map(String::toLowerCase).collect(Collectors.toList());
+                    gen.writeTree(filteredNode);
+                }
 
-                    for (String fieldName : fieldNames) {
-                        if (!include.contains(fieldName)) {
-                            // Use the original-case field name for the remove operation
-                            objectNode.remove(fieldNameMap.get(fieldName));
+                private static void buildFilteredNode(String[] pathSegments, ObjectNode objectNode, ObjectNode filteredNode) {
+                    ObjectNode currentNode = objectNode;
+                    for (String segment : pathSegments) {
+                        if (currentNode.has(segment)) {
+                            JsonNode childNode = currentNode.get(segment);
+                            if (childNode.isObject()) {
+                                currentNode = (ObjectNode) childNode;
+                            }
+                            else {
+                                filteredNode.set(segment, childNode);
+                                break;
+                            }
+                        }
+                        else {
+                            break;
                         }
                     }
-                    gen.writeTree(objectNode);
                 }
             });
 
             objectMapper.registerModule(module);
         }
-
         var javaTypeList = TypeFactory.defaultInstance().constructCollectionType(List.class, entityType.getJavaType());
         var writer = objectMapper.writerFor(javaTypeList);
         var json = writer.writeValueAsString(results);
         return json;
     }
-
 
     private List<?> searchEntities(Class<?> domainClass, EntityManager entityManager, Dto.Search search) {
         var whereIsPresent = searchRecordValidation(search);
@@ -162,6 +177,9 @@ public class JpaCriteriaSearchService {
             criteriaQuery.where(predicates.toArray(new Predicate[predicates.size()]));
         }
         var query = entityManager.createQuery(criteriaQuery);
+        //compensate for db load hit from fake projection in serializeEntityTypeList
+        query.setHint("jakarta.persistence.cache.storeMode", CacheStoreMode.USE);
+        query.setHint("jakarta.persistence.cache.retrieveMode", CacheRetrieveMode.USE);
         var results = query.getResultList();
         return results;
     }
