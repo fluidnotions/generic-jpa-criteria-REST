@@ -2,7 +2,6 @@ package com.fluidnotions.genericjpacriteriarest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.info.Info;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import org.springdoc.core.models.GroupedOpenApi;
@@ -41,6 +40,11 @@ public class GenericJpaCriteriaRestAutoConfiguration {
     @Bean
     public JpaCriteriaSearchService jpaCriteriaSearchService(EntityManager entityManager, Jackson2ObjectMapperBuilder jacksonBuilder) {
         return new JpaCriteriaSearchService(entityManager, jacksonBuilder);
+    }
+
+    @Bean
+    public JpaPatchController jpaPatchController(EntityManager entityManager) {
+        return new JpaPatchController(entityManager);
     }
 
     @Bean
