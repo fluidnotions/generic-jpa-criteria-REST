@@ -20,7 +20,7 @@ public class JpaPatchController {
 
     private final EntityManager entityManager;
 
-    @Operation(summary = "Patch update by table column name on any table", description = "Patch update by table column name on any table independent of project orm mappings. The payload is json property name is column name and value", tags = {"2. generic-jpa-criteria-rest"})
+    @Operation(summary = "Patch update by table column name on any table", description = "Patch update by table column name on any table independent of project orm mappings. The payload is json property name is column name and value", tags = {"1. generic-jpa-criteria-rest"})
     @PatchMapping("patch/{tableName}/{primaryKey}/{primaryKeyValue}")
     public ResponseEntity<Void> updateTable(
             @PathVariable String tableName, @PathVariable String primaryKey, @PathVariable Object primaryKeyValue, @RequestBody Map<String, Object> params
