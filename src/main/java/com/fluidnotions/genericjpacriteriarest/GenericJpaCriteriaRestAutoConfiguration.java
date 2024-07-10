@@ -43,8 +43,13 @@ public class GenericJpaCriteriaRestAutoConfiguration {
     }
 
     @Bean
-    public JpaPatchController jpaPatchController(EntityManager entityManager) {
-        return new JpaPatchController(entityManager);
+    public JpaPatchService jpaPatchService(EntityManager entityManager) {
+        return new JpaPatchService(entityManager);
+    }
+
+    @Bean
+    public JpaPatchController jpaPatchController(JpaPatchService jpaPatchService) {
+        return new JpaPatchController(jpaPatchService);
     }
 
     @Bean
