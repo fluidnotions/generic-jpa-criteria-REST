@@ -107,11 +107,14 @@ public class JpaCriteriaSearchService {
                     ObjectMapper defaultMapper = objectMapper();
                     ObjectNode objectNode = defaultMapper.valueToTree(value);
 
+                    List<String> projection = Arrays.stream(search.projection()).map(String::toLowerCase).collect(Collectors.toList());
+
                     ObjectNode filteredNode = defaultMapper.createObjectNode();
-                    for (String path : search.projection()) {
+                    for (String path : projection) {
                         String[] pathSegments = path.contains(".") ? path.split("\\.") : new String[]{path};
                         buildFilteredNode(pathSegments, objectNode, filteredNode);
                     }
+
                     gen.writeTree(filteredNode);
                 }
 
@@ -119,29 +122,19 @@ public class JpaCriteriaSearchService {
                     ObjectNode currentNode = objectNode;
                     for (String segment : pathSegments) {
                         if (currentNode.has(segment)) {
-                            currentNode = buildFilteredNodeSegment(filteredNode, segment, currentNode);
-                            if (currentNode == null) break;
-                        }
-                        else if (currentNode.has(segment.toLowerCase())) {
-                            currentNode = buildFilteredNodeSegment(filteredNode, segment.toLowerCase(), currentNode);
-                            if (currentNode == null) break;
+                            JsonNode childNode = currentNode.get(segment);
+                            if (childNode.isObject()) {
+                                currentNode = (ObjectNode) childNode;
+                            }
+                            else {
+                                filteredNode.set(segment, childNode);
+                                break;
+                            }
                         }
                         else {
                             break;
                         }
                     }
-                }
-
-                private static ObjectNode buildFilteredNodeSegment(ObjectNode filteredNode, String segment, ObjectNode currentNode) {
-                    JsonNode childNode = currentNode.get(segment);
-                    if (childNode.isObject()) {
-                        currentNode = (ObjectNode) childNode;
-                    }
-                    else {
-                        filteredNode.set(segment, childNode);
-                        return null;
-                    }
-                    return currentNode;
                 }
             });
 
