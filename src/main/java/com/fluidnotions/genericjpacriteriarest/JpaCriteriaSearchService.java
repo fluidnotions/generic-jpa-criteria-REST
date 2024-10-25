@@ -173,6 +173,12 @@ public class JpaCriteriaSearchService {
         if (whereIsPresent && search.where().equalsString() != null  && search.where().equalsString().values().stream().allMatch(value -> value != null)) {
             addEqualsStringPredicates(search, criteriaBuilder, root, predicates, fields);
         }
+        if(whereIsPresent && search.where().equalsInStrings() != null && !search.where().equalsInStrings().isEmpty()){
+            addEqualsInStringsPredicates(search, criteriaBuilder, root, predicates, fields);
+        }
+        if(whereIsPresent && search.where().equalsInLongs() != null && !search.where().equalsInLongs().isEmpty()){
+            addEqualsInLongsPredicates(search, criteriaBuilder, root, predicates, fields);
+        }
         if (predicates.size() > 0) {
             criteriaQuery.where(predicates.toArray(new Predicate[predicates.size()]));
         }
@@ -182,6 +188,46 @@ public class JpaCriteriaSearchService {
         query.setHint("jakarta.persistence.cache.retrieveMode", CacheRetrieveMode.USE);
         var results = query.getResultList();
         return results;
+    }
+
+    private void addEqualsInLongsPredicates(Dto.Search search, CriteriaBuilder criteriaBuilder, Root<?> root, List<Predicate> predicates, Field[] fields) {
+        for (var entry : search.where().equalsInLongs().entrySet()) {
+            var property = entry.getKey();
+            var inListValues = entry.getValue();
+            Arrays.stream(fields).filter(f -> {
+                var eq = f.getName().equalsIgnoreCase(property);
+                log.debug("addEqualsInLongsPredicates: eq: {}", eq);
+                return eq;
+            }).findFirst().ifPresent(f -> {
+                f.setAccessible(true);
+                var fname = f.getName();
+                Path rootName = root.get(fname);
+                log.debug("addEqualsInLongsPredicates: fieldName: {}, rootName: {}", fname, rootName);
+                var predicate = criteriaBuilder.in(rootName).value(inListValues);
+                log.debug("addEqualsInLongsPredicates: predicate: {}", predicate);
+                predicates.add(predicate);
+            });
+        }
+    }
+
+    private void addEqualsInStringsPredicates(Dto.Search search, CriteriaBuilder criteriaBuilder, Root<?> root, List<Predicate> predicates, Field[] fields) {
+        for (var entry : search.where().equalsInStrings().entrySet()) {
+            var property = entry.getKey();
+            var inListValues = entry.getValue();
+            Arrays.stream(fields).filter(f -> {
+                var eq = f.getName().equalsIgnoreCase(property);
+                log.debug("addEqualsInLongsPredicates: eq: {}", eq);
+                return eq;
+            }).findFirst().ifPresent(f -> {
+                f.setAccessible(true);
+                var fname = f.getName();
+                Path rootName = root.get(fname);
+                log.debug("addEqualsInLongsPredicates: fieldName: {}, rootName: {}", fname, rootName);
+                var predicate = criteriaBuilder.in(rootName).value(inListValues);
+                log.debug("addEqualsInLongsPredicates: predicate: {}", predicate);
+                predicates.add(predicate);
+            });
+        }
     }
 
     private void addIsNullPredicates(Dto.Search search, Field[] fields, Root<?> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {

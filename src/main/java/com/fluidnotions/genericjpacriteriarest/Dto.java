@@ -14,7 +14,7 @@ public interface Dto {
     }
 
     @Builder
-    record Where(Map<String, String> like, Map<String, Long> equalsLong, Map<String, Long> notEqualsLong, Map<String, String> equalsString, Set<String> isNull, Set<String> isNotNull) {
+    record Where(Map<String, String> like, Map<String, Long> equalsLong, Map<String, Long> notEqualsLong, Map<String, String> equalsString, Set<String> isNull, Set<String> isNotNull,Map<String, List<Long>> equalsInLongs, Map<String, List<String>> equalsInStrings) {
     }
 
     @Builder
